@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/error-handler.middleware';
+import { prisma } from './utils/prisma.util';
 dotenv.config();
 
 const app = express();
