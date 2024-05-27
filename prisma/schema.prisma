@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  APPLICANT
+  RECRUITER
+}
+
+enum Status {
+  APPLY
+  DROP
+  PASS
+  INTERVIEW1
+  INTERVIEW2
+  FINAL_PASS
+}
+
+model user {
+  user_id  Int @id @default(autoincrement()) @map("user_id")
+  email    String @unique @map("email")
+  password String @map("password")
+
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+  
+  user_info user_info?
+  resume resume[]
+
+  @@map("user")
+}
+
+model user_info {
+  user_info_id Int @id @default(autoincrement()) @map("user_info_id")
+  user_id      Int @unique @map("user_id")
+  name         String @map("name")
+  role         Role @default(APPLICANT) @map("role")
+
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  user user @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("user_info")
+}
+
+model resume {
+  resume_id Int @id @default(autoincrement()) @map("resume_id")
+  user_id   Int @map("user_id")
+  title     String @map("title")
+  content   String @db.Text @map("content")
+  status    Status @default(APPLY) @map("status")
+
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+  
+  user user @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  
+  @@map("resume")
+}
