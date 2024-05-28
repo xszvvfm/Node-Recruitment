@@ -48,6 +48,11 @@ router.get('/resume', authMiddleware, async (req, res, next) => {
     const { user_id } = req.user;
     const { sort } = req.query;
 
+    // 3. 비즈니스 로직(데이터 처리)
+    // 현재 로그인 한 사용자가 작성한 이력서 목록만 조회
+    // DB에서 이력서 조회 시 작성자 ID가 일치
+    // 정렬 조건에 따라 다른 결과 값을 조회
+    // 작성자 ID가 아닌 작성자 이름을 반환하기 위해 스키마에 정의 한 Relation을 활용해 조회
     const resumes = await prisma.resume.findMany({
       select: {
         resume_id: true,
@@ -56,6 +61,9 @@ router.get('/resume', authMiddleware, async (req, res, next) => {
             user_info: {
               select: {
                 name: true,
+              },
+              where: {
+                user_id: +user_id,
               },
             },
           },
@@ -79,6 +87,57 @@ router.get('/resume', authMiddleware, async (req, res, next) => {
 
     // 4. 반환 : 이력서 ID, 작성자 이름, 제목, 자기소개, 지원 상태, 생성일시, 수정일시
     return res.status(200).json({ message: '이력서 목록 조회가 완료되었습니다.', data: resumes });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/*** 이력서 상세 조회 ***/
+router.get('/resume/:resumeId', authMiddleware, async (req, res, next) => {
+  try {
+    // 1. 요청 : 사용자 정보 => req.user / 이력서 ID => req.params
+    const { user_id } = req.user;
+    const { resume_id } = req.params;
+
+    // 3. 비즈니스 로직(데이터 처리)
+    // 현재 로그인 한 사용자가 작성한 이력서 목록만 조회
+    // DB에서 이력서 조회 시 이력서 ID, 작성자 ID가 모두 일치
+    // 작성자 ID가 아닌 작성자 이름을 반환하기 위해 스키마에 정의 한 Relation을 활용해 조회
+    const resume = await prisma.resume.findFirst({
+      select: {
+        resume_id: true,
+        user: {
+          select: {
+            user_info: {
+              select: {
+                name: true,
+              },
+              where: {
+                user_id: +user_id,
+              },
+            },
+          },
+        },
+        title: true,
+        content: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+      },
+      where: {
+        user_id: +user_id,
+        resume_id: +resume_id,
+      },
+    });
+
+    // 2. 유효성 검증 및 에러 처리
+    // 이력서 정보가 없는 경우
+    if (!resume) {
+      return res.status(404).json({ message: '이력서가 존재하지 않습니다.' });
+    }
+
+    // 4. 반환 : 이력서 ID, 작성자 이름, 제목, 자기소개, 지원 상태, 생성일시, 수정일시
+    return res.status(200).json({ message: '이력서 상세 조회가 완료되었습니다', data: resume });
   } catch (err) {
     next(err);
   }
