@@ -143,4 +143,61 @@ router.get('/resume/:resumeId', authMiddleware, async (req, res, next) => {
   }
 });
 
+/*** 이력서 수정 ***/
+router.patch('/resume/:resumeId', authMiddleware, async (req, res, next) => {
+  try {
+    // 1. 요청 : 사용자 정보 => req.user / 이력서 ID => req.params
+    const { user_id } = req.user;
+    const { resume_id } = req.params;
+    const { title, content } = req.body;
+
+    // 3. 비즈니스 로직(데이터 처리)
+    // DB에서 이력서 조회 시 이력서 ID, 작성자 ID가 모두 일치
+    const resume = await prisma.resume.findFirst({
+      where: {
+        user_id: +user_id,
+        resume_id: +resume_id,
+      },
+    });
+
+    // 2. 유효성 검증 및 에러 처리
+    // 2-1. 제목, 자기소개 둘 다 없는 경우
+    if (!title && !content) {
+      return res.status(400).json({ message: '수정할 정보를 입력해 주세요.' });
+    }
+    // 2-2. 이력서 정보가 없는 경우
+    if (!resume) {
+      return res.status(404).json({ message: '이력서가 존재하지 않습니다.' });
+    }
+
+    // 3. 비즈니스 로직(데이터 처리)
+    // DB에서 이력서 정보를 수정
+    // 제목, 자기소개는 개별 수정 가능
+    const fixResume = await prisma.resume.update({
+      data: {
+        title,
+        content,
+      },
+      where: {
+        user_id: +user_id,
+        resume_id: +resume_id,
+      },
+      select: {
+        resume_id: true,
+        user_id: true,
+        title: true,
+        content: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    // 4. 반환 : 수정된 이력서 ID, 작성자 ID, 제목, 자기소개, 지원 상태, 생성일시, 수정일시
+    return res.status(200).json({ message: '이력서 수정이 완료되었습니다.', data: fixResume });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
