@@ -1,8 +1,11 @@
 import express from 'express';
+import dotenv from 'dotenv';
 import { prisma } from '../utils/prisma.util.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import authMiddleware from '../middlewares/auth.middleware.js';
 
+dotenv.config();
 const router = express.Router();
 
 /*** 회원가입 ***/
@@ -105,6 +108,32 @@ router.post('/sign-in', async (req, res, next) => {
     // 4. 반환 : AccessToken
     return res.status(200).json({
       message: '로그인에 성공했습니다.',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/*** 내 정보 조회 ***/
+router.get('/user', authMiddleware, async (req, res, next) => {
+  try {
+    const { user_id } = req.user;
+
+    const user_info = await prisma.user_info.findFirst({
+      where: { user_id: +user_id },
+      select: {
+        user_id: true,
+        email: true,
+        name: true,
+        role: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: '내 정보 조회에 성공했습니다.',
+      data: user_info,
     });
   } catch (err) {
     next(err);
