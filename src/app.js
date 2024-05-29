@@ -12,7 +12,12 @@ const PORT = process.env.SERVER_PORT;
 
 app.use(express.json());
 
-app.use(cookieParser);
+app.use(cookieParser());
+
+app.get('/', (req, res) => {
+  return res.send('Hello world');
+});
+
 app.use('/api', [userRouter, resumeRouter]);
 
 app.use(errorHandler);
